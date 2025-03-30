@@ -1,4 +1,5 @@
 import os
+import gdown
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,13 +8,36 @@ from sentence_transformers import SentenceTransformer
 import assemblyai as aai
 from dotenv import load_dotenv
 
-# Set AssemblyAI API key from Streamlit secrets (or environment variable)
+# Load AssemblyAI API Key from Streamlit secrets
 aai.settings.api_key = st.secrets["general"]["ASSEMBLYAI_API_KEY"]
+
+# Download CSV from Google Drive using gdown
+GDRIVE_CSV_FILE_ID = "1YlaqKn6DXPu2tySMbo3JKAHJFWLKjjGq"
+CSV_PATH = "subtitles.csv"
+
+def download_csv_from_drive(file_id, output_path):
+    url = f"https://drive.google.com/uc?id={file_id}"
+    st.write("Downloading CSV from:", url)
+    gdown.download(url, output_path, quiet=False, fuzzy=True)
+    return output_path
+
+if not os.path.exists(CSV_PATH):
+    with st.spinner("Downloading CSV file from Google Drive..."):
+        download_csv_from_drive(GDRIVE_CSV_FILE_ID, CSV_PATH)
+        st.success("✅ CSV downloaded successfully!")
+
+st.write(f"CSV file exists: {os.path.exists(CSV_PATH)}")
+st.write(f"CSV file size: {os.path.getsize(CSV_PATH)} bytes")
+
 
 # Load Subtitle Data from CSV
 @st.cache_data(show_spinner=True)
 def load_subtitles():
-    df = pd.read_csv("subtitles.csv")
+    """
+    Load subtitles from a CSV file.
+    Expected CSV columns: 'num', 'name', 'text'
+    """
+    df = pd.read_csv(CSV_PATH)
     return df
 
 df = load_subtitles()
@@ -24,7 +48,9 @@ else:
 
 @st.cache_data(show_spinner=True)
 def compute_embeddings(df):
-    # Ensure your CSV has a column named "text" with the subtitle text.
+    """
+    Compute embeddings for the subtitle text using SentenceTransformers.
+    """
     embeddings = model.encode(df["text"].tolist(), show_progress_bar=True)
     return embeddings
 
@@ -50,13 +76,10 @@ if uploaded_audio:
         st.success("✅ Transcription Complete!")
         st.text_area("🎧 Transcribed Text", transcribed_text, height=150)
         
-        # Compute embedding for the transcribed query
         query_embedding = model.encode([transcribed_text])
         
-        # Compute cosine similarity between the query and subtitle embeddings
         similarities = cosine_similarity(query_embedding, embeddings)[0]
         
-        # Get top 5 indices of the most similar subtitles
         top_indices = np.argsort(similarities)[::-1][:5]
         
         st.markdown("## 🔍 **Top Matching Subtitles**")
@@ -67,12 +90,14 @@ if uploaded_audio:
             - **📜 Subtitle:** {row['text'][:200]}...
             - 🔗 **[View on OpenSubtitles](https://www.opensubtitles.org/en/subtitles/{row['num']})**
             """)
+            
 
 # Sidebar & Footer
 st.sidebar.header("🔧 Settings")
 st.sidebar.markdown("""
-- **Database:** `CSV file (subtitles.csv) uploaded to GitHub`
-- **Search Mechanism:** `Semantic Search (Cosine Similarity)`
+- **Database:** CSV file (subtitles.csv) stored on Google Drive
+- **Search Mechanism:** Semantic Search (Cosine Similarity)
 """)
 st.markdown("---")
 st.markdown("**Developed by [Aashish Niranjan BarathyKannan](https://www.linkedin.com/in/aashishniranjanb/)** | [GitHub](https://github.com/aashishniranjanb)")
+
