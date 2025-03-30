@@ -1,7 +1,8 @@
 streamlit
+gdown
 pandas
 numpy
-scikit-learn
+faiss-cpu
 sentence-transformers
 assemblyai
 python-dotenv
