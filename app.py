@@ -7,21 +7,12 @@ from sentence_transformers import SentenceTransformer
 import assemblyai as aai
 from dotenv import load_dotenv
 
-# Load environment variables (if running locally, optional)
-load_dotenv()
-
 # Set AssemblyAI API key from Streamlit secrets (or environment variable)
 aai.settings.api_key = st.secrets["general"]["ASSEMBLYAI_API_KEY"]
 
-# -------------------------------
 # Load Subtitle Data from CSV
-# -------------------------------
 @st.cache_data(show_spinner=True)
 def load_subtitles():
-    """
-    Load subtitles from a CSV file.
-    Expected CSV columns: 'num', 'name', 'text'
-    """
     df = pd.read_csv("subtitles.csv")
     return df
 
@@ -31,14 +22,8 @@ if df.empty:
 else:
     st.success(f"Loaded {len(df)} subtitles.")
 
-# -------------------------------
-# Compute Subtitle Embeddings (Cached)
-# -------------------------------
 @st.cache_data(show_spinner=True)
 def compute_embeddings(df):
-    """
-    Compute embeddings for the subtitle text using SentenceTransformers.
-    """
     # Ensure your CSV has a column named "text" with the subtitle text.
     embeddings = model.encode(df["text"].tolist(), show_progress_bar=True)
     return embeddings
@@ -47,9 +32,7 @@ def compute_embeddings(df):
 model = SentenceTransformer("all-MiniLM-L6-v2")
 embeddings = compute_embeddings(df)
 
-# -------------------------------
 # Streamlit UI: Audio Transcription & Subtitle Search
-# -------------------------------
 st.set_page_config(page_title="Audio Transcription & Subtitle Search", layout="wide")
 st.title("🎵 Audio Transcription & Subtitle Search")
 st.markdown("Upload an **audio file**, transcribe it with AssemblyAI, and find the most similar subtitle segments!")
@@ -84,10 +67,8 @@ if uploaded_audio:
             - **📜 Subtitle:** {row['text'][:200]}...
             - 🔗 **[View on OpenSubtitles](https://www.opensubtitles.org/en/subtitles/{row['num']})**
             """)
-            
-# -------------------------------
-# Sidebar & Footer: Developer Information
-# -------------------------------
+
+# Sidebar & Footer
 st.sidebar.header("🔧 Settings")
 st.sidebar.markdown("""
 - **Database:** `CSV file (subtitles.csv) uploaded to GitHub`
