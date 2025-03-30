@@ -2,7 +2,7 @@ streamlit
 gdown
 pandas
 numpy
-faiss-cpu
+scikit-learn
 sentence-transformers
 assemblyai
 python-dotenv
